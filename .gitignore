@@ -1,0 +1,14 @@
+# Never commit these — they contain real data or credentials.
+tasks.json
+nas.json
+.smb-auth
+music-index.json
+music-cache/
+life-hud.log
+__pycache__/
+*.pyc
+*.bak
+*.pre-*
+*.tmp
+music/
+.DS_Store
