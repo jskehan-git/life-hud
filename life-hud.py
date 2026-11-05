@@ -954,6 +954,7 @@ if(idx>=0&&Date.now()-lastManualScroll>10000)lines[idx].scrollIntoView({block:"c
 audioEl.addEventListener("seeked",()=>{lyricIdx=-1;});
 async function playTrack(t){if(!t)return;mCurrent=t;mLastId=t.id;
 document.getElementById("nowplaying").textContent=`${t.title} — ${t.artist}`;
+document.title=`${t.title} — ${t.artist}`;
 document.getElementById("musicmode").textContent=`${t.album} · ${mModeName}`+(mQueue.length?` · ${mQi+1} of ${mQueue.length}`:"");
 const art=document.getElementById("albumart");
 art.onerror=()=>{art.style.display="none";};
