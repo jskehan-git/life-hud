@@ -145,7 +145,7 @@ def _split_null(raw, enc):
 def parse_mp3(path):
     """ID3v2 tags (title/artist/album/track/art/USLT lyrics), ID3v1 fallback."""
     info = {"title": None, "artist": None, "album": None, "track": None,
-            "art": None, "art_mime": None, "lyrics": None}
+            "year": None, "art": None, "art_mime": None, "lyrics": None}
     try:
         with open(path, "rb") as f:
             head = f.read(10)
@@ -163,7 +163,7 @@ def parse_mp3(path):
                     except Exception: break
                     fsize = _synchsafe(tag[pos + 4:pos + 8]) if ver == 4 else int.from_bytes(tag[pos + 4:pos + 8], "big")
                     body = tag[pos + 10:pos + 10 + fsize]
-                    if fid in ("TIT2", "TPE1", "TALB", "TRCK") and body:
+                    if fid in ("TIT2", "TPE1", "TALB", "TRCK", "TYER", "TDRC") and body:
                         txt = _decode_text(body[1:], body[0]).strip("\x00 \t\r\n")
                         if fid == "TIT2": info["title"] = txt
                         elif fid == "TPE1": info["artist"] = txt
@@ -171,6 +171,11 @@ def parse_mp3(path):
                         elif fid == "TRCK":
                             try: info["track"] = int(txt.split("/")[0])
                             except Exception: pass
+                        elif fid in ("TYER", "TDRC"):
+                            # Release date in tags is usually just a year;
+                            # a full date (e.g. 1978-06-15) keeps its year.
+                            m = re.match(r"(\d{4})", txt)
+                            if m: info["year"] = int(m.group(1))
                     elif fid == "APIC" and body and info["art"] is None:
                         enc = body[0]
                         rest = body[1:]
@@ -196,6 +201,8 @@ def parse_mp3(path):
                         info["artist"] = s(tail[33:63]) or None
                         info["album"] = s(tail[63:93]) or None
                         if tail[125] == 0 and tail[126] != 0: info["track"] = tail[126]
+                        yr = s(tail[93:97])
+                        if yr.isdigit(): info["year"] = int(yr)
                 except Exception: pass
     except Exception:
         pass
@@ -275,7 +282,7 @@ def get_music_index(force=False):
                 if not info["artist"]: artist = fa.strip()
                 if not info["title"]: title = ft.strip()
             tracks.append({"path": p, "source": "local", "artist": artist, "album": album,
-                           "title": title, "track": info["track"],
+                           "title": title, "track": info["track"], "year": info["year"],
                            "has_art": info["art"] is not None, "has_lyrics": bool(info["lyrics"])})
     cfg = load_nas_config()
     if cfg.get("share") and cfg.get("music_folder"):
@@ -952,9 +959,10 @@ const ly=document.getElementById("lyrics");const lines=ly.querySelectorAll(".lyr
 lines.forEach((d,i)=>{d.classList.toggle("cur",i===idx);d.classList.toggle("past",i<idx);});
 if(idx>=0&&Date.now()-lastManualScroll>10000)lines[idx].scrollIntoView({block:"center",behavior:"smooth"});});
 audioEl.addEventListener("seeked",()=>{lyricIdx=-1;});
+function fmtTrack(t){return `${t.title} — ${t.artist}${t.year?` (${t.year})`:""}`;}
 async function playTrack(t){if(!t)return;mCurrent=t;mLastId=t.id;
-document.getElementById("nowplaying").textContent=`${t.title} — ${t.artist}`;
-document.title=`${t.title} — ${t.artist}`;
+document.getElementById("nowplaying").textContent=fmtTrack(t);
+document.title=fmtTrack(t);
 document.getElementById("musicmode").textContent=`${t.album} · ${mModeName}`+(mQueue.length?` · ${mQi+1} of ${mQueue.length}`:"");
 const art=document.getElementById("albumart");
 art.onerror=()=>{art.style.display="none";};
