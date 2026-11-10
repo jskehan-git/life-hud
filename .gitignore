@@ -1,4 +1,5 @@
 # Never commit these — they contain real data or credentials.
+.claude/
 tasks.json
 nas.json
 .smb-auth
